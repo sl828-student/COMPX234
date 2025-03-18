@@ -1,9 +1,9 @@
 import java.util.ArrayList;
 
-class Assignment1 {
+class Assignment1Task {
 
     // Simulation Initialisation
-    private static int NUM_MACHINES = 50; // Number of machines in the system that issue print requests
+    private static int NUM_MACHINES = 5; // Number of machines in the system that issue print requests
     private static int NUM_PRINTERS = 5; // Number of printers in the system that print requests
     private static int SIMULATION_TIME = 30;
     private static int MAX_PRINTER_SLEEP = 3;
@@ -21,9 +21,29 @@ class Assignment1 {
 
         // Create Machine and Printer threads
         // Write code here
+        machineThread mThread;
+        printerThread pThread;
+        for (int i = 0; i < NUM_MACHINES; i++) {
+            mThread = new machineThread(i);
+            mThreads.add(mThread);
+        }
+        for (int i = 0; i < NUM_PRINTERS; i++) {
+            pThread = new printerThread(i);
+            pThreads.add(pThread);
+        }
+
+        System.out.println("Simulation started");
+        System.out.println("Number of machines: " + NUM_MACHINES);
+        System.out.println("Number of printers: " + NUM_PRINTERS);
 
         // start all the threads
         // Write code here
+        for (Thread t : mThreads) {
+            t.start();
+        }
+        for (Thread t : pThreads) {
+            t.start();
+        }
 
         // let the simulation run for some time
         sleep(SIMULATION_TIME);
@@ -33,6 +53,20 @@ class Assignment1 {
 
         // Wait until all printer threads finish by using the join function
         // Write code here
+        for (Thread t : pThreads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        for (Thread t : mThreads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
@@ -50,6 +84,11 @@ class Assignment1 {
                 printerSleep();
                 // Grab the request at the head of the queue and print it
                 // Write code here
+                synchronized (list) {
+                    if (list.head != null) {
+                        printDox(printerID);
+                    }
+                }
             }
         }
 
@@ -64,9 +103,11 @@ class Assignment1 {
         }
 
         public void printDox(int printerID) {
-            System.out.println("Printer ID:" + printerID + " : now available");
+            // System.out.println("Printer ID:" + printerID + " : now available");
             // print from the queue
-            list.queuePrint(list, printerID);
+            synchronized (list) {
+                list.queuePrint(list, printerID);
+            }
         }
 
     }
@@ -85,6 +126,13 @@ class Assignment1 {
                 machineSleep();
                 // machine wakes up and sends a print request
                 // Write code here
+                synchronized (list) {
+                    if (list.getLength() < NUM_PRINTERS) {
+                        printRequest(machineID);
+                    } else {
+                        System.out.println("Machine " + machineID + " is waiting for a space in the queue");
+                    }
+                }
             }
         }
 

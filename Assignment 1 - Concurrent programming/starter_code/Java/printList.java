@@ -55,10 +55,10 @@ class printList {
         // Only print if there is a node in the list
         if (list.head != null) {
             Node currNode = list.head;
-            System.out.println(":::::");
-            System.out.println("Printer " + id + "Printing the request from Machine ID: "
+            System.out.print(":::::");
+            System.out.print("Printer " + id + "; Printing the request from Machine ID: "
                     + currNode.document.getSender() + " " + currNode.document.getStr() + " ");
-            System.out.println(":::::");
+            System.out.print(":::::\n");
             System.out.flush();
             // Once printed remove the node from the queue
             list.head = list.head.next;
@@ -80,5 +80,15 @@ class printList {
             // Go to next node
             currNode = currNode.next;
         }
+    }
+
+    public int getLength() {
+        int count = 0;
+        Node currNode = head;
+        while (currNode != null) {
+            count++;
+            currNode = currNode.next;
+        }
+        return count;
     }
 }
