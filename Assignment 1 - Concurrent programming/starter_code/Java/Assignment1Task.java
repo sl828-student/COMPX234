@@ -1,10 +1,11 @@
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 class Assignment1Task {
 
     // Simulation Initialisation
-    private static int NUM_MACHINES = 5; // Number of machines in the system that issue print requests
-    private static int NUM_PRINTERS = 5; // Number of printers in the system that print requests
+    private static int NUM_MACHINES = 50; // Number of machines in the system that issue print requests
+    private static int NUM_PRINTERS = 50; // Number of printers in the system that print requests
     private static int SIMULATION_TIME = 30;
     private static int MAX_PRINTER_SLEEP = 3;
     private static int MAX_MACHINE_SLEEP = 5;
@@ -12,6 +13,11 @@ class Assignment1Task {
 
     // Create an empty list of print requests
     printList list = new printList();
+
+    // Semaphores for synchronization
+    private Semaphore availableSlots = new Semaphore(NUM_PRINTERS); // Tracks available slots in the queue
+    private Semaphore filledSlots = new Semaphore(0); // Tracks filled slots in the queue
+    private Semaphore mutex = new Semaphore(1); // Ensures mutual exclusion for queue access
 
     public void startSimulation() {
 
@@ -84,10 +90,16 @@ class Assignment1Task {
                 printerSleep();
                 // Grab the request at the head of the queue and print it
                 // Write code here
-                synchronized (list) {
-                    if (list.head != null) {
-                        printDox(printerID);
-                    }
+                try {
+                    filledSlots.acquire(); // Wait for a filled slot
+                    mutex.acquire(); // Acquire mutex to access the queue
+
+                    list.queuePrint(list, printerID);
+
+                    mutex.release(); // Release mutex
+                    availableSlots.release(); // Signal that a slot is now available
+                } catch (InterruptedException e) {
+                    System.out.println("Printer " + printerID + " was interrupted while waiting to print.");
                 }
             }
         }
@@ -126,12 +138,16 @@ class Assignment1Task {
                 machineSleep();
                 // machine wakes up and sends a print request
                 // Write code here
-                synchronized (list) {
-                    if (list.getLength() < NUM_PRINTERS) {
-                        printRequest(machineID);
-                    } else {
-                        System.out.println("Machine " + machineID + " is waiting for a space in the queue");
-                    }
+                try {
+                    availableSlots.acquire(); // Wait for an available slot
+                    mutex.acquire(); // Acquire mutex to access the queue
+
+                    printRequest(machineID);
+
+                    mutex.release(); // Release mutex
+                    filledSlots.release(); // Signal that a new slot is filled
+                } catch (InterruptedException e) {
+                    System.out.println("Machine " + machineID + " was interrupted while waiting to insert.");
                 }
             }
         }
